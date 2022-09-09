@@ -5,6 +5,7 @@ import (
 	"os/exec"
 	"strings"
 	"strconv"
+	mqtt "github.com/eclipse/paho.mqtt.golang" 
 	"time"
 )
 // Khai bao
@@ -22,6 +23,11 @@ var system int = 0
 var idle int = 0
 var avg float64 = 0
 
+var  mqtt_pione     mqtt.Client
+
+const  MOSQUITTO_HOST string = "tcp://localhost:1883"
+const  HA_TOPIC_IN  string = "xuong/server/thongso"
+
 func FloatToString(input_num float64) string {
     // to convert a float number to a string
     return strconv.FormatFloat(input_num, 'f', 3, 64)
@@ -29,6 +35,20 @@ func FloatToString(input_num float64) string {
 
 func sleep_ms(ms time.Duration) {
 	time.Sleep(time.Millisecond * ms)   // sleep(nano second)
+}
+
+func mqtt_begin() {
+    opts_pione := mqtt.NewClientOptions()
+    opts_pione.AddBroker(MOSQUITTO_HOST)
+    opts_pione.SetUsername("nmtam")
+    opts_pione.SetPassword("221220")
+    opts_pione.SetCleanSession(true)
+    mqtt_pione = mqtt.NewClient(opts_pione)
+    if token := mqtt_pione.Connect(); token.Wait() && token.Error() != nil {
+        panic(token.Error())
+    } else {
+        fmt.Printf("MQTT pione Connected\n")
+    }
 }
 
 //get disk of PI
@@ -39,18 +59,9 @@ func get_disk(){
 	}
 	var out1 = string(out)
 	var list = strings.Split(out1, " ")
-
-//	fmt.Printf("list : %q\n", list)
-
 	total,_ := strconv.Atoi(list[3])
 	used,_ := strconv.Atoi(list[4])
-
-//	fmt.Printf(" %T\t%v\n",total, total)
-//	fmt.Printf(" %T\t%v\n",used, used)
-
 	var percent float64 = (float64(used)*100)/float64(total)
-//	fmt.Printf("Phan tram used : %T\t%v\n",percent, percent)
-
 	disk = FloatToString(percent)
 }
 
@@ -62,7 +73,6 @@ func get_temp(){
 	}
 	out1,_ := strconv.Atoi(string(out[0:(len(out)-1)]))
 	out3 := float64(out1)/1000
-	// fmt.Printf("%f\n", out3)
 	temp = FloatToString(out3)
 }
 
@@ -74,10 +84,6 @@ func getIP(){
 	}
 	var out1 = string(out)
 	var list = strings.Split(out1, " ")
-
-	// fmt.Printf("list : %q\n", list)
-
-	// fmt.Printf(" %T\t%v\n",list[9], list[9])
 	ip = list[9]
 }
 
@@ -89,18 +95,9 @@ func Get_Mem(){
 	}
 	var out1 = string(out)
 	var list = strings.Split(out1, " ")
-
-	// fmt.Printf("list : %q\n", list)
-
 	total,_ := strconv.Atoi(list[13])
 	used,_ := strconv.Atoi(list[22])
-
-	// fmt.Printf(" %T\t%v\n",total, total)
-	// fmt.Printf(" %T\t%v\n",used, used)
-
 	var percent float64 = (float64(used)*100)/float64(total)
-	// fmt.Printf("Phan tram used : %T\t%v\n",percent, percent)
-
 	mem = FloatToString(percent)
 }
 
@@ -112,9 +109,6 @@ func Get_cpu(){
 	}
 	var out1 = string(out)
 	var cpu = strings.Split(out1, " ")
-	
-	// fmt.Printf("Old :  %v\t%v\t%v\n",user, system,idle)
-	
 	x,_ := strconv.Atoi(cpu[2])
 	user = x - user
 	y,_ := strconv.Atoi(cpu[4])
@@ -122,11 +116,6 @@ func Get_cpu(){
 	z,_ := strconv.Atoi(cpu[5])
 	idle =  z- idle
 	avg = ((float64(user +system))*100)/(float64(user + system + idle))
-	
-	// fmt.Printf("New :  %v\t%v\t%v\n",x, y,z)
-	// fmt.Printf("Sub :  %v\t%v\t%v\n",user, system,idle)
-	// fmt.Printf("percent : %v\n\n", avg)
-		
 	user = x
 	system = y
 	idle = z	
@@ -134,23 +123,15 @@ func Get_cpu(){
 
 // Push data Thingsboard
 func Publish_data(){
-	var payload string = "{" + "\"TEMP\":" + "\"" + temp + "\"" + "," + "\"IP Pi\":" + "\"" + ip + "\"" + "," + "\"Memory Pi\":" + "\"" + mem + "\"" + "," + "\"CPU Pi\":" + "\"" + FloatToString(avg) + "\"" + "}" // Ghep các bản tin từ code cũ thành 1 bản tin
+	var payload string = "{" + "\"CPU PI TEMP\":" + "\"" + temp + "\"" + "," + "\"IP Pi\":" + "\"" + ip + "\"" + "," + "\"Disk Pi\":" + "\"" + disk + "\"" + "," + "\"Memory Pi\":" + "\"" + mem + "\"" + "," + "\"CPU Pi\":" + "\"" + FloatToString(avg) + "\"" + "}" // Ghep các bản tin từ code cũ thành 1 bản tin
 	fmt.Printf(payload) 
 	fmt.Printf("\n")
-	//mqtt_demo_Thingsboard_Io.Publish(THINGSBOARD_TOPIC_IN, 0, false, payload)
-	//mqtt_amazon.Publish(THINGSBOARD_TOPIC_IN, 0, false, payload)
-	
+	mqtt_pione.Publish(HA_TOPIC_IN, 0, false, payload)	// QoS = 0
 }
-
-
 
 func main() {
 
-	// mqtt_begin()
-	// mqtt_domoticz.Publish(DOMITICZ_TOPIC_IN, 0, false,reset)	// reset buzzer ve off
-	// mqtt_domoticz.Subscribe(DOMITICZ_TOPIC_OUT, 0, mqtt_domoticz_messageHandler)  // QoS = 0
-	// mqtt_amazon.Subscribe(THINGSBOARD_TOPIC_OUT, 0,mqtt_messageHandler)
-	
+	mqtt_begin()
 	// Loop:
 	for {
 		sleep_ms(1000) // delay 1s gửi dữu liệu 1 lần
