@@ -26,7 +26,7 @@ var avg float64 = 0
 var  mqtt_pione     mqtt.Client
 
 const  MOSQUITTO_HOST string = "tcp://localhost:1883"
-const  HA_TOPIC_IN  string = "xuong/server/thongso"
+const  HA_TOPIC_IN  string = "xuong/server/specification"
 
 func FloatToString(input_num float64) string {
     // to convert a float number to a string
@@ -43,6 +43,8 @@ func mqtt_begin() {
     opts_pione.SetUsername("nmtam")
     opts_pione.SetPassword("221220")
     opts_pione.SetCleanSession(true)
+	opts_pione.SetOnConnectHandler(onConnectHandler)
+    opts_pione.SetConnectionLostHandler(onConnectionLostHandler)
     mqtt_pione = mqtt.NewClient(opts_pione)
     if token := mqtt_pione.Connect(); token.Wait() && token.Error() != nil {
         panic(token.Error())
@@ -127,6 +129,14 @@ func Publish_data(){
 	fmt.Printf(payload) 
 	fmt.Printf("\n")
 	mqtt_pione.Publish(HA_TOPIC_IN, 0, false, payload)	// QoS = 0
+}
+
+func onConnectionLostHandler(mqtt_pione mqtt.Client, reason error) {
+    fmt.Printf("Disconnected\n");
+}
+
+func onConnectHandler(mqtt_pione mqtt.Client) {
+    fmt.Printf("Connected\n");
 }
 
 func main() {
