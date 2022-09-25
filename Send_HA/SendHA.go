@@ -125,7 +125,7 @@ func Get_cpu(){
 
 // Push data Thingsboard
 func Publish_data(){
-	var payload string = "{" + "\"CPU PI TEMP\":" + "\"" + temp + "\"" + "," + "\"IP Pi\":" + "\"" + ip + "\"" + "," + "\"Disk Pi\":" + "\"" + disk + "\"" + "," + "\"Memory Pi\":" + "\"" + mem + "\"" + "," + "\"CPU Pi\":" + "\"" + FloatToString(avg) + "\"" + "}" // Ghep các bản tin từ code cũ thành 1 bản tin
+	var payload string = "{" + "\"CpuPiTemp\":" + "\"" + temp + "\"" + "," + "\"IpPi\":" + "\"" + ip + "\"" + "," + "\"DiskPi\":" + "\"" + disk + "\"" + "," + "\"MemoryPi\":" + "\"" + mem + "\"" + "," + "\"CpuPi\":" + "\"" + FloatToString(avg) + "\"" + "}" // Ghep các bản tin từ code cũ thành 1 bản tin
 	fmt.Printf(payload) 
 	fmt.Printf("\n")
 	mqtt_pione.Publish(HA_TOPIC_IN, 0, false, payload)	// QoS = 0
