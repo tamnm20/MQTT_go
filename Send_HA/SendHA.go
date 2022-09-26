@@ -140,11 +140,11 @@ func onConnectHandler(mqtt_pione mqtt.Client) {
 }
 
 func main() {
-
+	sleep_ms(180000) // Thời gian chờ HA và MQTT broker khởi động
 	mqtt_begin()
 	// Loop:
 	for {
-		sleep_ms(1000) // delay 1s gửi dữu liệu 1 lần
+		sleep_ms(3000) // delay 3s gửi dữu liệu 1 lần
 		getIP()
 		get_temp()
 		get_disk()
