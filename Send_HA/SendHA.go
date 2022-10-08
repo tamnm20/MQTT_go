@@ -30,7 +30,7 @@ const  HA_TOPIC_IN  string = "xuong/server/specification"
 
 func FloatToString(input_num float64) string {
     // to convert a float number to a string
-    return strconv.FormatFloat(input_num, 'f', 3, 64)
+    return strconv.FormatFloat(input_num, 'f', 2, 64)
 }
 
 func sleep_ms(ms time.Duration) {
